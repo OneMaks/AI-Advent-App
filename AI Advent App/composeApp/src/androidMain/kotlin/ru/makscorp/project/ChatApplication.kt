@@ -17,7 +17,6 @@ class ChatApplication : Application() {
             apiHost = BuildConfig.AI_API_HOST,
             authHost = BuildConfig.AI_AUTH_HOST,
             authorizationKey = BuildConfig.AI_AUTH_KEY,
-            model = BuildConfig.AI_MODEL,
             scope = BuildConfig.AI_SCOPE
         )
 

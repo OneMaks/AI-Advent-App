@@ -9,16 +9,16 @@ import ru.makscorp.project.data.api.createApiHttpClient
 import ru.makscorp.project.data.api.createAuthHttpClient
 import ru.makscorp.project.data.repository.AuthRepositoryImpl
 import ru.makscorp.project.data.repository.ChatRepositoryImpl
-import ru.makscorp.project.data.storage.TokenStorage
+import ru.makscorp.project.data.repository.SettingsRepositoryImpl
 import ru.makscorp.project.domain.repository.AuthRepository
 import ru.makscorp.project.domain.repository.ChatRepository
+import ru.makscorp.project.domain.repository.SettingsRepository
 import ru.makscorp.project.presentation.chat.ChatViewModel
 
 data class ApiConfig(
     val apiHost: String,
     val authHost: String,
     val authorizationKey: String,
-    val model: String,
     val scope: String = "GIGACHAT_API_PERS"
 )
 
@@ -45,12 +45,17 @@ fun appModule(config: ApiConfig) = module {
         )
     }
 
+    // Settings Repository
+    single<SettingsRepository> {
+        SettingsRepositoryImpl(settingsStorage = get())
+    }
+
     // Chat API Client
     single {
         ChatApiClient(
             httpClient = get(named("api")),
             authRepository = get(),
-            model = config.model
+            settingsRepository = get()
         )
     }
 

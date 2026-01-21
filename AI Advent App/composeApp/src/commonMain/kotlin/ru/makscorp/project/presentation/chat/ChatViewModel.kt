@@ -3,26 +3,34 @@ package ru.makscorp.project.presentation.chat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import ru.makscorp.project.domain.model.ChatSettings
 import ru.makscorp.project.domain.model.ChatState
 import ru.makscorp.project.domain.model.Message
 import ru.makscorp.project.domain.model.MessageRole
 import ru.makscorp.project.domain.model.MessageStatus
 import ru.makscorp.project.domain.repository.ChatRepository
+import ru.makscorp.project.domain.repository.SettingsRepository
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
 class ChatViewModel(
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ChatState())
     val state: StateFlow<ChatState> = _state.asStateFlow()
+
+    val settings: StateFlow<ChatSettings> = settingsRepository.settings
+        .stateIn(viewModelScope, SharingStarted.Eagerly, settingsRepository.getSettings())
 
     fun onInputChange(text: String) {
         _state.update { it.copy(inputText = text) }
@@ -86,5 +94,14 @@ class ChatViewModel(
 
     fun clearError() {
         _state.update { it.copy(error = null) }
+    }
+
+    fun updateSettings(newSettings: ChatSettings) {
+        settingsRepository.updateSettings(newSettings)
+    }
+
+    fun clearChat() {
+        chatRepository.clearMessages()
+        _state.update { it.copy(messages = emptyList()) }
     }
 }

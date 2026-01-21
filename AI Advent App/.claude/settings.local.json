@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude mcp list)",
+      "Bash(./gradlew composeApp:compileCommonMainKotlinMetadata:*)",
+      "Bash(./gradlew composeApp:compileDebugKotlin:*)",
+      "Bash(./gradlew composeApp:assembleDebug --no-daemon)",
+      "Bash(git commit:*)",
+      "Bash(./gradlew compileDebugKotlinAndroid:*)"
+    ]
+  }
+}

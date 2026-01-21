@@ -6,4 +6,5 @@ import ru.makscorp.project.domain.model.Message
 interface ChatRepository {
     suspend fun sendMessage(userMessage: String): Result<Message>
     fun getMessages(): Flow<List<Message>>
+    fun clearMessages()
 }

@@ -60,7 +60,7 @@ class ChatRepositoryImpl(
         )
     }
 
-    fun clearHistory() {
+    override fun clearMessages() {
         conversationHistory.clear()
         _messages.value = emptyList()
     }
