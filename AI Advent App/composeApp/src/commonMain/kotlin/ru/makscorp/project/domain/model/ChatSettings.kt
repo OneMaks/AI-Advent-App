@@ -5,7 +5,8 @@ data class ChatSettings(
     val temperature: Float = 0.7f,
     val maxTokens: Int = 2048,
     val systemPrompt: String = "",
-    val outputFormat: OutputFormat = OutputFormat.NONE
+    val outputFormat: OutputFormat = OutputFormat.NONE,
+    val thinkingMode: Boolean = false
 )
 
 enum class GigaChatModel(val apiName: String, val displayName: String) {

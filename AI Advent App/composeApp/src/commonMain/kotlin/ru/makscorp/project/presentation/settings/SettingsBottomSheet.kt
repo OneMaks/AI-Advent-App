@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +51,7 @@ fun SettingsBottomSheet(
     var maxTokens by remember(settings) { mutableIntStateOf(settings.maxTokens) }
     var systemPrompt by remember(settings) { mutableStateOf(settings.systemPrompt) }
     var selectedOutputFormat by remember(settings) { mutableStateOf(settings.outputFormat) }
+    var thinkingMode by remember(settings) { mutableStateOf(settings.thinkingMode) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -158,6 +160,30 @@ fun SettingsBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Thinking mode
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    checked = thinkingMode,
+                    onCheckedChange = { thinkingMode = it }
+                )
+                Column(modifier = Modifier.padding(start = 8.dp)) {
+                    Text(
+                        text = "Режим размышления",
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        text = "ИИ задаст уточняющие вопросы перед итоговым ответом",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // System prompt
             Text(
                 text = "Системный промпт",
@@ -210,7 +236,8 @@ fun SettingsBottomSheet(
                                 temperature = temperature,
                                 maxTokens = maxTokens,
                                 systemPrompt = systemPrompt,
-                                outputFormat = selectedOutputFormat
+                                outputFormat = selectedOutputFormat,
+                                thinkingMode = thinkingMode
                             )
                         )
                     },

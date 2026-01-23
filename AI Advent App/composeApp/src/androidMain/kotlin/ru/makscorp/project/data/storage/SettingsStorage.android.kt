@@ -20,6 +20,7 @@ actual class SettingsStorage(context: Context) {
             .putInt(KEY_MAX_TOKENS, settings.maxTokens)
             .putString(KEY_SYSTEM_PROMPT, settings.systemPrompt)
             .putString(KEY_OUTPUT_FORMAT, settings.outputFormat.name)
+            .putBoolean(KEY_THINKING_MODE, settings.thinkingMode)
             .apply()
     }
 
@@ -43,7 +44,8 @@ actual class SettingsStorage(context: Context) {
             temperature = prefs.getFloat(KEY_TEMPERATURE, 0.7f),
             maxTokens = prefs.getInt(KEY_MAX_TOKENS, 2048),
             systemPrompt = prefs.getString(KEY_SYSTEM_PROMPT, "") ?: "",
-            outputFormat = outputFormat
+            outputFormat = outputFormat,
+            thinkingMode = prefs.getBoolean(KEY_THINKING_MODE, false)
         )
     }
 
@@ -57,5 +59,6 @@ actual class SettingsStorage(context: Context) {
         const val KEY_MAX_TOKENS = "max_tokens"
         const val KEY_SYSTEM_PROMPT = "system_prompt"
         const val KEY_OUTPUT_FORMAT = "output_format"
+        const val KEY_THINKING_MODE = "thinking_mode"
     }
 }
