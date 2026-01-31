@@ -40,6 +40,44 @@ AI_SCOPE=GIGACHAT_API_PERS
 
 ---
 
+### Token Usage Indicator
+
+The app displays token usage information for each assistant response in the format:
+
+```
+Расчёт: 45 → 120 (165)
+Факт: 52 → 134 (186)
+```
+
+**Format:** `prompt tokens → completion tokens (total)`
+
+| Line | Description |
+|------|-------------|
+| **Расчёт** (Estimated) | Locally calculated token estimate using heuristics |
+| **Факт** (Actual) | Real token counts from API response |
+
+**Estimation Algorithm (`TokenEstimator`):**
+
+The estimator uses character-based heuristics with different weights:
+
+| Character Type | Weight | Approx. chars per token |
+|----------------|--------|-------------------------|
+| Latin letters/digits | 0.25 | ~4 |
+| Cyrillic (Russian) | 0.5 | ~2 |
+| CJK (Chinese) | 1.0 | ~1 |
+| Whitespace | 0.25 | ~4 |
+| Punctuation | 0.5 | ~2 |
+
+**Example:** "Привет мир" (10 Cyrillic chars + 1 space):
+- 10 × 0.5 = 5 (Cyrillic)
+- 1 × 0.25 = 0.25 (space)
+- 2 × 0.1 = 0.2 (word boundaries)
+- **Total: ≈ 5 tokens**
+
+Comparing estimated vs actual values helps understand real API consumption and evaluate estimation accuracy.
+
+---
+
 ### Build and Run Android Application
 
 To build and run the development version of the Android app, use the run configuration from the run widget

@@ -6,7 +6,9 @@
       "Bash(./gradlew composeApp:compileDebugKotlin:*)",
       "Bash(./gradlew composeApp:assembleDebug --no-daemon)",
       "Bash(git commit:*)",
-      "Bash(./gradlew compileDebugKotlinAndroid:*)"
+      "Bash(./gradlew compileDebugKotlinAndroid:*)",
+      "Bash(./gradlew compileKotlin:*)",
+      "Bash(./gradlew :composeApp:compileDebugKotlinAndroid:*)"
     ]
   }
 }

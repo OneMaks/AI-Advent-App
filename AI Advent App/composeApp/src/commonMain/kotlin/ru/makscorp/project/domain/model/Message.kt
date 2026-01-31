@@ -7,7 +7,8 @@ data class Message(
     val content: String,
     val role: MessageRole,
     val timestamp: Instant,
-    val status: MessageStatus = MessageStatus.SENT
+    val status: MessageStatus = MessageStatus.SENT,
+    val tokenUsage: TokenUsage? = null
 )
 
 enum class MessageRole {

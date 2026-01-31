@@ -9,7 +9,9 @@ import ru.makscorp.project.data.api.dto.ChatMessageDto
 import ru.makscorp.project.domain.model.Message
 import ru.makscorp.project.domain.model.MessageRole
 import ru.makscorp.project.domain.model.MessageStatus
+import ru.makscorp.project.domain.model.TokenUsage
 import ru.makscorp.project.domain.repository.ChatRepository
+import ru.makscorp.project.util.TokenEstimator
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -42,12 +44,28 @@ class ChatRepositoryImpl(
                     ChatMessageDto(role = "assistant", content = assistantContent)
                 )
 
+                // Calculate estimated tokens
+                val estimatedPromptTokens = conversationHistory
+                    .dropLast(1) // Exclude assistant response
+                    .sumOf { TokenEstimator.estimateTokens(it.content) }
+                val estimatedCompletionTokens = TokenEstimator.estimateTokens(assistantContent)
+
+                // Get actual tokens from API response
+                val tokenUsage = TokenUsage(
+                    estimatedPromptTokens = estimatedPromptTokens,
+                    estimatedCompletionTokens = estimatedCompletionTokens,
+                    actualPromptTokens = response.usage?.promptTokens,
+                    actualCompletionTokens = response.usage?.completionTokens,
+                    actualTotalTokens = response.usage?.totalTokens
+                )
+
                 val assistantMessage = Message(
                     id = Uuid.random().toString(),
                     content = assistantContent,
                     role = MessageRole.ASSISTANT,
                     timestamp = Clock.System.now(),
-                    status = MessageStatus.SENT
+                    status = MessageStatus.SENT,
+                    tokenUsage = tokenUsage
                 )
 
                 Result.success(assistantMessage)
