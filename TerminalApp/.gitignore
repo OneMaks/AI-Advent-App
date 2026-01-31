@@ -1,0 +1,26 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+out/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Local configuration (user-specific)
+local.properties
+
+# Conversations (optional - uncomment to exclude saved conversations)
+# conversations/
