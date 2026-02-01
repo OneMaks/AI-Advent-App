@@ -1,13 +1,16 @@
 package ru.makscorp.project.data.repository
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import ru.makscorp.project.data.api.ChatApiClient
 import ru.makscorp.project.data.api.dto.ChatMessageDto
-import ru.makscorp.project.data.storage.ContextStorage
-import ru.makscorp.project.domain.model.ConversationContext
+import ru.makscorp.project.data.storage.ChatDatabase
 import ru.makscorp.project.domain.model.ContextSummary
 import ru.makscorp.project.domain.model.Message
 import ru.makscorp.project.domain.model.MessageRole
@@ -26,19 +29,38 @@ class ChatRepositoryImpl(
     private val apiClient: ChatApiClient,
     private val compressionService: ContextCompressionService,
     private val settingsRepository: SettingsRepository,
-    private val contextStorage: ContextStorage
+    private val chatDatabase: ChatDatabase
 ) : ChatRepository {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val _messages = MutableStateFlow<List<Message>>(emptyList())
     private val _summaries = MutableStateFlow<List<ContextSummary>>(emptyList())
 
-    // Последние сообщения (полный контекст)
+    // Кэш несжатых сообщений для API контекста
     private val recentMessages = mutableListOf<ChatMessageDto>()
 
     init {
-        // Восстанавливаем контекст из хранилища
-        contextStorage.loadContext()?.let { savedContext ->
-            _summaries.value = savedContext.summaries
+        // Загружаем данные из БД
+        scope.launch {
+            // Загружаем несжатые сообщения для отображения
+            chatDatabase.getUncompressedMessages().collect { messages ->
+                _messages.value = messages
+                // Синхронизируем recentMessages с БД
+                recentMessages.clear()
+                recentMessages.addAll(messages.map { msg ->
+                    ChatMessageDto(
+                        role = if (msg.role == MessageRole.USER) "user" else "assistant",
+                        content = msg.content
+                    )
+                })
+            }
+        }
+        scope.launch {
+            // Загружаем резюме
+            chatDatabase.getSummaries().collect { summaries ->
+                _summaries.value = summaries
+            }
         }
     }
 
@@ -47,14 +69,29 @@ class ChatRepositoryImpl(
     override fun getSummaries(): Flow<List<ContextSummary>> = _summaries.asStateFlow()
 
     override suspend fun sendMessage(userMessage: String): Result<SendMessageResult> {
-        // Добавляем сообщение пользователя
+        // Создаем сообщение пользователя
+        val userMessageObj = Message(
+            id = Uuid.random().toString(),
+            content = userMessage,
+            role = MessageRole.USER,
+            timestamp = Clock.System.now(),
+            status = MessageStatus.SENT
+        )
+
+        // Сохраняем в БД
+        chatDatabase.insertMessage(userMessageObj)
+
+        // Добавляем в кэш для API
         recentMessages.add(
             ChatMessageDto(role = "user", content = userMessage)
         )
 
+        // Обновляем UI
+        _messages.value = _messages.value + userMessageObj
+
         val settings = settingsRepository.getSettings()
 
-        // Проверяем необходимость сжатия и получаем количество сжатых сообщений
+        // Проверяем необходимость сжатия
         var compressedCount = 0
         if (compressionService.shouldCompress(recentMessages.size, settings)) {
             compressedCount = performCompression(settings.recentMessagesCount)
@@ -71,13 +108,10 @@ class ChatRepositoryImpl(
                 val assistantContent = response.choices.firstOrNull()?.message?.content
                     ?: "No response received"
 
-                // Добавляем ответ ассистента в историю
+                // Добавляем ответ ассистента в кэш
                 recentMessages.add(
                     ChatMessageDto(role = "assistant", content = assistantContent)
                 )
-
-                // Сохраняем контекст
-                saveContext()
 
                 // Вычисляем токены
                 val estimatedPromptTokens = recentMessages
@@ -103,14 +137,22 @@ class ChatRepositoryImpl(
                     tokenUsage = tokenUsage
                 )
 
+                // Сохраняем в БД
+                chatDatabase.insertMessage(assistantMessage)
+
+                // Обновляем UI
+                _messages.value = _messages.value + assistantMessage
+
                 Result.success(SendMessageResult(
                     message = assistantMessage,
                     compressedMessagesCount = compressedCount
                 ))
             },
             onFailure = { error ->
-                // Удаляем неудачное сообщение из истории
+                // Удаляем неудачное сообщение из кэша
                 recentMessages.removeLastOrNull()
+                // Помечаем сообщение пользователя как ошибку в UI
+                _messages.value = _messages.value.dropLast(1) + userMessageObj.copy(status = MessageStatus.ERROR)
                 Result.failure(error)
             }
         )
@@ -126,16 +168,29 @@ class ChatRepositoryImpl(
 
         val oldMessages = recentMessages.take(messagesToCompress)
 
+        // Получаем ID сообщений для пометки как сжатые
+        val currentMessages = _messages.value
+        val messageIdsToCompress = currentMessages.take(messagesToCompress).map { it.id }
+
         var compressedCount = 0
         compressionService.summarizeMessages(oldMessages)
             .onSuccess { summary ->
+                // Сохраняем резюме в БД
+                chatDatabase.insertSummary(summary)
+
+                // Помечаем сообщения как сжатые в БД
+                chatDatabase.markMessagesAsCompressed(messageIdsToCompress, summary.id)
+
+                // Обновляем UI
                 _summaries.value = _summaries.value + summary
-                // Удаляем сжатые сообщения из recent
+
+                // Удаляем сжатые сообщения из кэша и UI
                 repeat(messagesToCompress) {
                     recentMessages.removeFirstOrNull()
                 }
+                _messages.value = currentMessages.drop(messagesToCompress)
+
                 compressedCount = messagesToCompress
-                saveContext()
             }
             .onFailure {
                 // При ошибке продолжаем без сжатия
@@ -144,18 +199,14 @@ class ChatRepositoryImpl(
         return compressedCount
     }
 
-    /**
-     * Сохраняет контекст в хранилище
-     */
-    private fun saveContext() {
-        val context = ConversationContext(summaries = _summaries.value)
-        contextStorage.saveContext(context)
-    }
-
     override fun clearMessages() {
         recentMessages.clear()
         _summaries.value = emptyList()
-        contextStorage.clearContext()
         _messages.value = emptyList()
+
+        // Очищаем БД
+        scope.launch {
+            chatDatabase.clearAll()
+        }
     }
 }

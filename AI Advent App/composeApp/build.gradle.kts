@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinx.serialization)
+    alias(libs.plugins.ksp)
 }
 
 // Load local.properties for API configuration
@@ -42,6 +43,10 @@ kotlin {
 
             // Security for encrypted token storage
             implementation(libs.androidx.security.crypto)
+
+            // Room Database
+            implementation(libs.room.runtime)
+            implementation(libs.room.ktx)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -116,5 +121,8 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+
+    // Room compiler (KSP)
+    add("kspAndroid", libs.room.compiler)
 }
 

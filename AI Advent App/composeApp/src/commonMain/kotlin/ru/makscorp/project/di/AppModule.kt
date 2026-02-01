@@ -72,7 +72,7 @@ fun appModule(config: ApiConfig) = module {
             apiClient = get(),
             compressionService = get(),
             settingsRepository = get(),
-            contextStorage = get()
+            chatDatabase = get()
         )
     }
 
