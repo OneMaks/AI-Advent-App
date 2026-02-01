@@ -6,7 +6,11 @@ data class ChatSettings(
     val maxTokens: Int = 2048,
     val systemPrompt: String = "",
     val outputFormat: OutputFormat = OutputFormat.NONE,
-    val thinkingMode: Boolean = false
+    val thinkingMode: Boolean = false,
+    // Настройки сжатия контекста
+    val contextCompressionEnabled: Boolean = false,
+    val compressionThreshold: Int = 20,
+    val recentMessagesCount: Int = 10
 )
 
 enum class GigaChatModel(val apiName: String, val displayName: String) {

@@ -10,9 +10,11 @@ import ru.makscorp.project.data.api.createAuthHttpClient
 import ru.makscorp.project.data.repository.AuthRepositoryImpl
 import ru.makscorp.project.data.repository.ChatRepositoryImpl
 import ru.makscorp.project.data.repository.SettingsRepositoryImpl
+import ru.makscorp.project.data.service.ContextCompressionServiceImpl
 import ru.makscorp.project.domain.repository.AuthRepository
 import ru.makscorp.project.domain.repository.ChatRepository
 import ru.makscorp.project.domain.repository.SettingsRepository
+import ru.makscorp.project.domain.service.ContextCompressionService
 import ru.makscorp.project.presentation.chat.ChatViewModel
 
 data class ApiConfig(
@@ -59,9 +61,19 @@ fun appModule(config: ApiConfig) = module {
         )
     }
 
+    // Context Compression Service
+    single<ContextCompressionService> {
+        ContextCompressionServiceImpl(apiClient = get())
+    }
+
     // Chat Repository
     single<ChatRepository> {
-        ChatRepositoryImpl(apiClient = get())
+        ChatRepositoryImpl(
+            apiClient = get(),
+            compressionService = get(),
+            settingsRepository = get(),
+            contextStorage = get()
+        )
     }
 
     // ViewModel

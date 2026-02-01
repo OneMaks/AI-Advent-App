@@ -32,6 +32,15 @@ class ChatViewModel(
     val settings: StateFlow<ChatSettings> = settingsRepository.settings
         .stateIn(viewModelScope, SharingStarted.Eagerly, settingsRepository.getSettings())
 
+    init {
+        // Подписка на изменения summaries
+        viewModelScope.launch {
+            chatRepository.getSummaries().collect { summaries ->
+                _state.update { it.copy(summaries = summaries) }
+            }
+        }
+    }
+
     fun onInputChange(text: String) {
         _state.update { it.copy(inputText = text) }
     }
@@ -59,10 +68,17 @@ class ChatViewModel(
 
         viewModelScope.launch {
             chatRepository.sendMessage(currentInput)
-                .onSuccess { assistantMessage ->
+                .onSuccess { result ->
                     _state.update { state ->
+                        // Если были сжатые сообщения, удаляем их из UI
+                        val updatedMessages = if (result.compressedMessagesCount > 0) {
+                            state.messages.drop(result.compressedMessagesCount)
+                        } else {
+                            state.messages
+                        }
+
                         state.copy(
-                            messages = state.messages + assistantMessage,
+                            messages = updatedMessages + result.message,
                             isLoading = false
                         )
                     }

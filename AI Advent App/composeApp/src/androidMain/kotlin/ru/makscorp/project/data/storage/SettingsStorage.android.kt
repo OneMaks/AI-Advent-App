@@ -21,6 +21,9 @@ actual class SettingsStorage(context: Context) {
             .putString(KEY_SYSTEM_PROMPT, settings.systemPrompt)
             .putString(KEY_OUTPUT_FORMAT, settings.outputFormat.name)
             .putBoolean(KEY_THINKING_MODE, settings.thinkingMode)
+            .putBoolean(KEY_CONTEXT_COMPRESSION_ENABLED, settings.contextCompressionEnabled)
+            .putInt(KEY_COMPRESSION_THRESHOLD, settings.compressionThreshold)
+            .putInt(KEY_RECENT_MESSAGES_COUNT, settings.recentMessagesCount)
             .apply()
     }
 
@@ -45,7 +48,10 @@ actual class SettingsStorage(context: Context) {
             maxTokens = prefs.getInt(KEY_MAX_TOKENS, 2048),
             systemPrompt = prefs.getString(KEY_SYSTEM_PROMPT, "") ?: "",
             outputFormat = outputFormat,
-            thinkingMode = prefs.getBoolean(KEY_THINKING_MODE, false)
+            thinkingMode = prefs.getBoolean(KEY_THINKING_MODE, false),
+            contextCompressionEnabled = prefs.getBoolean(KEY_CONTEXT_COMPRESSION_ENABLED, false),
+            compressionThreshold = prefs.getInt(KEY_COMPRESSION_THRESHOLD, 20),
+            recentMessagesCount = prefs.getInt(KEY_RECENT_MESSAGES_COUNT, 10)
         )
     }
 
@@ -60,5 +66,8 @@ actual class SettingsStorage(context: Context) {
         const val KEY_SYSTEM_PROMPT = "system_prompt"
         const val KEY_OUTPUT_FORMAT = "output_format"
         const val KEY_THINKING_MODE = "thinking_mode"
+        const val KEY_CONTEXT_COMPRESSION_ENABLED = "context_compression_enabled"
+        const val KEY_COMPRESSION_THRESHOLD = "compression_threshold"
+        const val KEY_RECENT_MESSAGES_COUNT = "recent_messages_count"
     }
 }

@@ -105,6 +105,65 @@ class ChatApiClient(
             setBody(request)
         }
     }
+
+    /**
+     * Отправляет запрос для суммаризации сообщений с оптимизированными параметрами
+     */
+    suspend fun sendMessageForSummary(messages: List<ChatMessageDto>): Result<ChatResponseDto> {
+        return try {
+            val settings = settingsRepository.getSettings()
+
+            val request = ChatRequestDto(
+                model = settings.model.apiName,
+                messages = messages,
+                maxTokens = 200,  // Короткое резюме
+                temperature = 0.3 // Более детерминированный результат
+            )
+
+            var accessToken = authRepository.getValidToken().getOrElse { error ->
+                return Result.failure(
+                    ApiException(
+                        message = "Authentication failed: ${error.message}",
+                        cause = error
+                    )
+                )
+            }
+
+            var response = executeRequest(request, accessToken)
+
+            if (response.status == HttpStatusCode.Unauthorized) {
+                accessToken = authRepository.refreshToken().getOrElse { error ->
+                    return Result.failure(
+                        ApiException(
+                            message = "Token refresh failed: ${error.message}",
+                            cause = error
+                        )
+                    )
+                }
+                response = executeRequest(request, accessToken)
+            }
+
+            if (response.status.isSuccess()) {
+                Result.success(response.body<ChatResponseDto>())
+            } else {
+                val errorBody = response.bodyAsText()
+                val errorMessage = try {
+                    val apiError = json.decodeFromString<ApiErrorDto>(errorBody)
+                    apiError.error.message
+                } catch (e: Exception) {
+                    "API error: ${response.status.value} - $errorBody"
+                }
+                Result.failure(ApiException(errorMessage, response.status.value))
+            }
+        } catch (e: Exception) {
+            Result.failure(
+                ApiException(
+                    message = e.message ?: "Unknown network error",
+                    cause = e
+                )
+            )
+        }
+    }
 }
 
 class ApiException(

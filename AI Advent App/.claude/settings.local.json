@@ -8,7 +8,10 @@
       "Bash(git commit:*)",
       "Bash(./gradlew compileDebugKotlinAndroid:*)",
       "Bash(./gradlew compileKotlin:*)",
-      "Bash(./gradlew :composeApp:compileDebugKotlinAndroid:*)"
+      "Bash(./gradlew :composeApp:compileDebugKotlinAndroid:*)",
+      "Bash(find:*)",
+      "Bash(tree:*)",
+      "Bash(./gradlew assembleDebug:*)"
     ]
   }
 }

@@ -120,6 +120,7 @@ fun ChatScreen(
         ) {
             MessageList(
                 messages = state.messages,
+                summaries = state.summaries,
                 isLoading = state.isLoading,
                 modifier = Modifier.weight(1f)
             )

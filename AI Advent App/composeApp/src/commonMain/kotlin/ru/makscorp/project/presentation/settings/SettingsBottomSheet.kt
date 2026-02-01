@@ -1,5 +1,6 @@
 package ru.makscorp.project.presentation.settings
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -52,6 +54,9 @@ fun SettingsBottomSheet(
     var systemPrompt by remember(settings) { mutableStateOf(settings.systemPrompt) }
     var selectedOutputFormat by remember(settings) { mutableStateOf(settings.outputFormat) }
     var thinkingMode by remember(settings) { mutableStateOf(settings.thinkingMode) }
+    var contextCompressionEnabled by remember(settings) { mutableStateOf(settings.contextCompressionEnabled) }
+    var compressionThreshold by remember(settings) { mutableIntStateOf(settings.compressionThreshold) }
+    var recentMessagesCount by remember(settings) { mutableIntStateOf(settings.recentMessagesCount) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -213,6 +218,85 @@ fun SettingsBottomSheet(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Divider
+            HorizontalDivider()
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Context compression section
+            Text(
+                text = "Управление контекстом",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            // Enable compression checkbox
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    checked = contextCompressionEnabled,
+                    onCheckedChange = { contextCompressionEnabled = it }
+                )
+                Column(modifier = Modifier.padding(start = 8.dp)) {
+                    Text(
+                        text = "Сжатие контекста",
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        text = "Автоматически суммаризирует старые сообщения",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Compression settings (visible when enabled)
+            AnimatedVisibility(visible = contextCompressionEnabled) {
+                Column {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Порог сжатия: $compressionThreshold сообщений",
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        text = "После этого количества начнется сжатие",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Slider(
+                        value = compressionThreshold.toFloat(),
+                        onValueChange = { compressionThreshold = it.roundToInt() },
+                        valueRange = 5f..50f,
+                        steps = 8,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Сохранять последних: $recentMessagesCount сообщений",
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        text = "Эти сообщения остаются полными, без сжатия",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Slider(
+                        value = recentMessagesCount.toFloat(),
+                        onValueChange = { recentMessagesCount = it.roundToInt() },
+                        valueRange = 3f..20f,
+                        steps = 16,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             // Buttons
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -237,7 +321,10 @@ fun SettingsBottomSheet(
                                 maxTokens = maxTokens,
                                 systemPrompt = systemPrompt,
                                 outputFormat = selectedOutputFormat,
-                                thinkingMode = thinkingMode
+                                thinkingMode = thinkingMode,
+                                contextCompressionEnabled = contextCompressionEnabled,
+                                compressionThreshold = compressionThreshold,
+                                recentMessagesCount = recentMessagesCount
                             )
                         )
                     },
